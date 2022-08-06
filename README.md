@@ -1,4 +1,4 @@
-# Yew + canvas2d + swap buffer
+# Tetris
 - name: Eduin Garcia Cordero
 - linkedin: [https://www.linkedin.com/in/eduinlight/](https://www.linkedin.com/in/eduinlight/)
 - github: [https://github.com/eduinlight](https://github.com/eduinlight)
