@@ -16,10 +16,10 @@ fn App() -> Html {
     let main_canvas_node = main_canvas_node.clone();
     let buffer_canvas_node = buffer_canvas_node.clone();
     use_effect(move || {
-      let game = Rc::new(Game::new(
+      let game = Rc::new(RefCell::new(Game::new(
         &buffer_canvas_node.clone(),
         &main_canvas_node.clone(),
-      ));
+      )));
       Game::start(game);
       || {}
     });

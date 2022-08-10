@@ -4,7 +4,7 @@ use crate::dom_utils::{
   JsAnimationFrame, Size,
 };
 use log::info;
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, Window};
 use yew::NodeRef;
@@ -13,7 +13,7 @@ pub trait GameCicleType {
   fn handle_user_input(&self);
   fn update(&self);
   fn render(&self);
-  fn start(game: Rc<Self>);
+  fn start(game: Rc<RefCell<Self>>);
 }
 
 #[derive(Clone)]
@@ -55,7 +55,9 @@ impl Game {
     }
   }
 
-  fn sync_window_size(&self) {
+  fn sync_window_size(&mut self) {
+    self.size = get_window_size(&self.window);
+    log::info!("here {:?}", self.size);
     self.canvas.set_width(self.size.width as u32);
     self.canvas.set_height(self.size.height as u32);
 
@@ -63,10 +65,10 @@ impl Game {
     self.main_canvas.set_height(self.size.height as u32);
   }
 
-  fn handle_resize(&self) {
+  fn handle_resize(&mut self) {
     self.sync_window_size();
     {
-      let game = self.clone();
+      let mut game = self.clone();
       let clojure = Closure::<dyn FnMut(_)>::new(move |_: web_sys::DomWindowResizeEventDetail| {
         game.sync_window_size();
       });
@@ -112,9 +114,10 @@ impl GameCicleType for Game {
       .unwrap();
   }
 
-  fn start(game: Rc<Self>) {
-    game.as_ref().handle_resize();
-    let window = Rc::clone(&game.as_ref().window);
+  fn start(game: Rc<RefCell<Self>>) {
+    (*game).borrow_mut().handle_resize();
+    let window = Rc::clone(&(*game).borrow().window);
+    let game = Rc::new((*game).borrow().clone());
     create_render_cicle(window, game);
   }
 }
