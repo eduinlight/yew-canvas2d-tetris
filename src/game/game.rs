@@ -1,13 +1,18 @@
-use super::{entities::SmileEntity, EntityType};
 use crate::dom_utils::{
   create_render_cicle, get_canvas, get_canvas_context_2d, get_window, get_window_size,
   JsAnimationFrame, Size,
 };
+use crate::game::tetris::{BoxShape, IShape, JShape, LShape, SRShape, SShape, TShape};
+use crate::utils::plane::*;
 use log::info;
+use std::borrow::Borrow;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, Window};
 use yew::NodeRef;
+
+use super::tetris::{Board, Shape};
+use super::EntityType;
 
 pub trait GameCicleType {
   fn handle_user_input(&self);
@@ -24,7 +29,9 @@ pub struct Game {
   main_canvas: Rc<HtmlCanvasElement>,
   main_context: Rc<CanvasRenderingContext2d>,
   size: Size,
-  entities: Vec<Rc<Box<dyn EntityType>>>,
+  board: Rc<Board>,
+  shapes: Vec<Rc<Box<dyn Shape>>>,
+  active_shape: Option<Rc<Box<dyn Shape>>>,
 }
 
 impl Game {
@@ -39,10 +46,89 @@ impl Game {
 
     let size = get_window_size(&window);
 
-    // add entities
-    let mut entities: Vec<Rc<Box<dyn EntityType>>> = vec![];
-    let smile = SmileEntity::new();
-    entities.push(Rc::new(Box::new(smile)));
+    let board = Board::new(
+      Point2DBuilder::<f32>::default()
+        .x(50 as f32)
+        .y(50 as f32)
+        .build()
+        .unwrap(),
+      300,
+      600,
+    );
+
+    let mut shapes = vec![];
+    let box_shape = Rc::new(Box::new(BoxShape::new(
+      Point2DBuilder::<f32>::default()
+        .x(board.position.x)
+        .y(board.position.y)
+        .build()
+        .unwrap(),
+      board.cell_size,
+    )) as Box<dyn Shape>);
+
+    let j_shape = Rc::new(Box::new(JShape::new(
+      Point2DBuilder::<f32>::default()
+        .x(board.position.x)
+        .y(board.position.y)
+        .build()
+        .unwrap(),
+      board.cell_size,
+    )) as Box<dyn Shape>);
+
+    let l_shape = Rc::new(Box::new(LShape::new(
+      Point2DBuilder::<f32>::default()
+        .x(board.position.x)
+        .y(board.position.y)
+        .build()
+        .unwrap(),
+      board.cell_size,
+    )) as Box<dyn Shape>);
+
+    let i_shape = Rc::new(Box::new(IShape::new(
+      Point2DBuilder::<f32>::default()
+        .x(board.position.x)
+        .y(board.position.y)
+        .build()
+        .unwrap(),
+      board.cell_size,
+    )) as Box<dyn Shape>);
+
+    let t_shape = Rc::new(Box::new(TShape::new(
+      Point2DBuilder::<f32>::default()
+        .x(board.position.x)
+        .y(board.position.y)
+        .build()
+        .unwrap(),
+      board.cell_size,
+    )) as Box<dyn Shape>);
+
+    let s_shape = Rc::new(Box::new(SShape::new(
+      Point2DBuilder::<f32>::default()
+        .x(board.position.x)
+        .y(board.position.y)
+        .build()
+        .unwrap(),
+      board.cell_size,
+    )) as Box<dyn Shape>);
+
+    let sr_shape = Rc::new(Box::new(SRShape::new(
+      Point2DBuilder::<f32>::default()
+        .x(board.position.x)
+        .y(board.position.y)
+        .build()
+        .unwrap(),
+      board.cell_size,
+    )) as Box<dyn Shape>);
+
+    shapes.push(Rc::clone(&box_shape));
+    shapes.push(Rc::clone(&j_shape));
+    shapes.push(Rc::clone(&l_shape));
+    shapes.push(Rc::clone(&i_shape));
+    shapes.push(Rc::clone(&t_shape));
+    shapes.push(Rc::clone(&s_shape));
+    shapes.push(Rc::clone(&sr_shape));
+
+    let active_shape = Some(Rc::clone(&s_shape));
 
     Game {
       window,
@@ -51,7 +137,9 @@ impl Game {
       main_canvas,
       main_context,
       size,
-      entities,
+      board: Rc::new(board),
+      shapes,
+      active_shape,
     }
   }
 
@@ -80,11 +168,21 @@ impl Game {
       clojure.forget();
     };
   }
+
+  fn swap_buffers(&self) {
+    // swap buffers
+    self
+      .main_context
+      .clear_rect(0f64, 0f64, self.size.width, self.size.height);
+    self
+      .main_context
+      .draw_image_with_html_canvas_element(&self.canvas, 0f64, 0f64)
+      .unwrap();
+  }
 }
 
 impl JsAnimationFrame for Game {
   fn frame(&self, elapsed: f32) {
-    info!("{}", elapsed);
     self.update();
     self.render();
   }
@@ -100,18 +198,15 @@ impl GameCicleType for Game {
       .context
       .clear_rect(0f64, 0f64, self.size.width, self.size.height);
 
-    for entity in self.entities.iter() {
+    self.board.render(Rc::clone(&self.context));
+
+    if self.active_shape.is_some() {
+      let entity =
+        Box::new(*self.active_shape.clone().unwrap().as_ref().clone()) as Box<dyn EntityType>;
       entity.render(Rc::clone(&self.context));
     }
 
-    // swap buffers
-    self
-      .main_context
-      .clear_rect(0f64, 0f64, self.size.width, self.size.height);
-    self
-      .main_context
-      .draw_image_with_html_canvas_element(&self.canvas, 0f64, 0f64)
-      .unwrap();
+    self.swap_buffers();
   }
 
   fn start(game: Rc<RefCell<Self>>) {
