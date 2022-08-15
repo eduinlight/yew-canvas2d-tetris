@@ -1,23 +1,9 @@
 mod board;
-mod box_shape;
 mod cell;
-mod i_shape;
-mod j_shape;
-mod l_shape;
-mod s_shape;
 mod shape;
-mod sr_shape;
-mod t_shape;
 mod tetris;
 
 pub use board::*;
-pub use box_shape::*;
 pub use cell::*;
-pub use i_shape::*;
-pub use j_shape::*;
-pub use l_shape::*;
-pub use s_shape::*;
 pub use shape::*;
-pub use sr_shape::*;
-pub use t_shape::*;
 pub use tetris::*;

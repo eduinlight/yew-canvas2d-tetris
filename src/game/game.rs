@@ -2,10 +2,8 @@ use crate::dom_utils::{
   create_render_cicle, get_canvas, get_canvas_context_2d, get_window, get_window_size,
   JsAnimationFrame, Size,
 };
-use crate::game::tetris::{BoxShape, IShape, JShape, LShape, SRShape, SShape, TShape};
 use crate::utils::plane::*;
 use log::info;
-use std::borrow::Borrow;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, Window};
@@ -30,8 +28,8 @@ pub struct Game {
   main_context: Rc<CanvasRenderingContext2d>,
   size: Size,
   board: Rc<Board>,
-  shapes: Vec<Rc<Box<dyn Shape>>>,
-  active_shape: Option<Rc<Box<dyn Shape>>>,
+  shapes: Vec<Rc<Shape>>,
+  active_shape: Option<Rc<Shape>>,
 }
 
 impl Game {
@@ -57,68 +55,68 @@ impl Game {
     );
 
     let mut shapes = vec![];
-    let box_shape = Rc::new(Box::new(BoxShape::new(
+    let box_shape = Rc::new(Shape::new_box(
       Point2DBuilder::<f32>::default()
         .x(board.position.x)
         .y(board.position.y)
         .build()
         .unwrap(),
       board.cell_size,
-    )) as Box<dyn Shape>);
+    ));
 
-    let j_shape = Rc::new(Box::new(JShape::new(
+    let j_shape = Rc::new(Shape::new_j(
       Point2DBuilder::<f32>::default()
         .x(board.position.x)
         .y(board.position.y)
         .build()
         .unwrap(),
       board.cell_size,
-    )) as Box<dyn Shape>);
+    ));
 
-    let l_shape = Rc::new(Box::new(LShape::new(
+    let l_shape = Rc::new(Shape::new_l(
       Point2DBuilder::<f32>::default()
         .x(board.position.x)
         .y(board.position.y)
         .build()
         .unwrap(),
       board.cell_size,
-    )) as Box<dyn Shape>);
+    ));
 
-    let i_shape = Rc::new(Box::new(IShape::new(
+    let i_shape = Rc::new(Shape::new_i(
       Point2DBuilder::<f32>::default()
         .x(board.position.x)
         .y(board.position.y)
         .build()
         .unwrap(),
       board.cell_size,
-    )) as Box<dyn Shape>);
+    ));
 
-    let t_shape = Rc::new(Box::new(TShape::new(
+    let t_shape = Rc::new(Shape::new_t(
       Point2DBuilder::<f32>::default()
         .x(board.position.x)
         .y(board.position.y)
         .build()
         .unwrap(),
       board.cell_size,
-    )) as Box<dyn Shape>);
+    ));
 
-    let s_shape = Rc::new(Box::new(SShape::new(
+    let s_shape = Rc::new(Shape::new_s(
       Point2DBuilder::<f32>::default()
         .x(board.position.x)
         .y(board.position.y)
         .build()
         .unwrap(),
       board.cell_size,
-    )) as Box<dyn Shape>);
+    ));
 
-    let sr_shape = Rc::new(Box::new(SRShape::new(
+    let sr_shape = Rc::new(Shape::new_sr(
       Point2DBuilder::<f32>::default()
         .x(board.position.x)
         .y(board.position.y)
         .build()
         .unwrap(),
       board.cell_size,
-    )) as Box<dyn Shape>);
+    ));
 
     shapes.push(Rc::clone(&box_shape));
     shapes.push(Rc::clone(&j_shape));
@@ -128,7 +126,7 @@ impl Game {
     shapes.push(Rc::clone(&s_shape));
     shapes.push(Rc::clone(&sr_shape));
 
-    let active_shape = Some(Rc::clone(&s_shape));
+    let active_shape = Some(Rc::clone(&i_shape));
 
     Game {
       window,
@@ -201,9 +199,11 @@ impl GameCicleType for Game {
     self.board.render(Rc::clone(&self.context));
 
     if self.active_shape.is_some() {
-      let entity =
-        Box::new(*self.active_shape.clone().unwrap().as_ref().clone()) as Box<dyn EntityType>;
-      entity.render(Rc::clone(&self.context));
+      self
+        .active_shape
+        .clone()
+        .unwrap()
+        .render(Rc::clone(&self.context));
     }
 
     self.swap_buffers();
